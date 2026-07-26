@@ -7,6 +7,14 @@
       "course_name": "EVR205 skmt",
       "watch_classes": [],
       "pending_class_list": false
+    },
+    {
+      "course_id": "592",
+      "semester_id": "95",
+      "timespan_id": "95",
+      "course_name": "ES271 bongda cc",
+      "watch_classes": [],
+      "pending_class_list": true
     }
   ],
   "semester_id": "95",
