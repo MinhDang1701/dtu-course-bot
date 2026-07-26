@@ -1,5 +1,14 @@
 {
-  "courses": [],
+  "courses": [
+    {
+      "course_id": "43",
+      "semester_id": "95",
+      "timespan_id": "95",
+      "course_name": "EVR205 skmt",
+      "watch_classes": [],
+      "pending_class_list": true
+    }
+  ],
   "semester_id": "95",
   "timespan_id": "95"
 }
