@@ -2,7 +2,7 @@ name: DTU Course Watcher
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # mỗi 5 phút — GitHub có thể trễ vài phút, đây là bình thường
+    - cron: "*/15 * * * *"   # mỗi 5 phút — GitHub có thể trễ vài phút, đây là bình thường
   workflow_dispatch: {}       # cho phép bấm chạy tay để test
 
 permissions:
