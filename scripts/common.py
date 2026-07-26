@@ -5,6 +5,7 @@ Các hàm dùng chung cho cả 2 job: telegram_commands.py và check_courses.py
 
 import json
 import os
+import re
 import requests
 
 CONFIG_PATH = "config/courses.json"
@@ -34,7 +35,10 @@ def save_json(path, data):
 
 
 def load_config():
-    return load_json(CONFIG_PATH, {"courses": []})
+    cfg = load_json(CONFIG_PATH, {"courses": []})
+    cfg.setdefault("semester_id", None)
+    cfg.setdefault("timespan_id", None)
+    return cfg
 
 
 def save_config(cfg):
@@ -97,4 +101,16 @@ def find_course(cfg, course_id):
     for c in cfg["courses"]:
         if str(c["course_id"]) == str(course_id):
             return c
+    return None
+
+
+def extract_course_id(text):
+    if not text:
+        return None
+    text = text.strip()
+    if text.isdigit():
+        return text
+    match = re.search(r"[?&]courseid=(\d+)", text, re.IGNORECASE)
+    if match:
+        return match.group(1)
     return None

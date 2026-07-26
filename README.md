@@ -25,11 +25,16 @@ trên GitHub Actions (không cần bật máy tính, không cần VPS).
 ## 2. Cách dùng qua Telegram
 
 ```
-/track <course_id> <semester_id> <timespan_id> <ten_mon>
+/hocky <semester_id> <timespan_id>
 ```
-Ví dụ: `/track 1860 95 95 HIS362`
-→ Thêm môn theo dõi. Trong lần chạy tiếp theo (~15 phút), bot sẽ tự gửi
-danh sách toàn bộ lớp của môn này.
+Ví dụ: `/hocky 95 95`
+→ Cài đặt học kỳ mặc định (semester_id và timespan_id). Lệnh này là bắt buộc chạy trước khi sử dụng `/track` lần đầu.
+
+```
+/track <course_id hoặc URL môn học> <ten_mon>
+```
+Ví dụ: `/track 1860 HIS362` hoặc `/track https://courses.duytan.edu.vn/Modules/academicprogram/CourseClassResult.aspx?courseid=1860&semesterid=95&timespan=95 HIS362`
+→ Thêm môn theo dõi. Lệnh sẽ tự động sử dụng `semester_id` và `timespan_id` được cấu hình từ `/hocky`. Trong lần chạy tiếp theo (~15 phút), bot sẽ tự gửi danh sách toàn bộ lớp của môn này.
 
 ```
 /classes <course_id>

@@ -5,7 +5,8 @@ Nếu phần này lỗi (Telegram API sập, sai cú pháp lệnh...) sẽ khôn
 tới job check lớp học ở job 2.
 
 Lệnh hỗ trợ:
-  /track <course_id> <semester_id> <timespan_id> <ten_mon>
+  /hocky <semester_id> <timespan_id>
+  /track <course_id hoặc URL môn học> <ten_mon>
   /untrack <course_id>
   /list
   /classes <course_id>      -> đánh dấu "cần lấy danh sách lớp", job 2 sẽ gửi
@@ -24,14 +25,33 @@ from common import (
     telegram_get_updates,
     telegram_send_message,
     find_course,
+    extract_course_id,
 )
 
 
+def cmd_hocky(cfg, args):
+    if len(args) < 2:
+        return "❌ Cú pháp: /hocky <semester_id> <timespan_id>"
+    cfg["semester_id"] = args[0]
+    cfg["timespan_id"] = args[1]
+    return (f"✅ Đã lưu semester_id = {args[0]} và timespan_id = {args[1]}.\n"
+            f"Từ giờ lệnh /track chỉ cần course_id hoặc URL môn học và tên môn.")
+
+
 def cmd_track(cfg, args):
-    if len(args) < 4:
-        return "❌ Cú pháp: /track <course_id> <semester_id> <timespan_id> <ten_mon>"
-    course_id, semester_id, timespan_id = args[0], args[1], args[2]
-    course_name = " ".join(args[3:])
+    semester_id = cfg.get("semester_id")
+    timespan_id = cfg.get("timespan_id")
+    if semester_id is None or timespan_id is None:
+        return "❌ Vui lòng cài đặt học kỳ bằng lệnh /hocky <semester_id> <timespan_id> trước."
+
+    if len(args) < 2:
+        return "❌ Cú pháp: /track <course_id hoặc URL môn học> <ten_mon>"
+
+    course_id = extract_course_id(args[0])
+    if course_id is None:
+        return "❌ Không nhận diện được course_id từ tham số đã nhập."
+
+    course_name = " ".join(args[1:])
 
     if find_course(cfg, course_id):
         return f"⚠️ Môn {course_id} đã có trong danh sách theo dõi rồi."
@@ -98,13 +118,20 @@ def cmd_status(cfg, args):
     total_courses = len(cfg["courses"])
     total_classes = sum(len(c.get("watch_classes") or []) for c in cfg["courses"])
     last_check = state.get("_last_check_time", "chưa có lần check nào")
+    
+    sem_str = cfg.get("semester_id") if cfg.get("semester_id") is not None else "(chưa khai báo)"
+    time_str = cfg.get("timespan_id") if cfg.get("timespan_id") is not None else "(chưa khai báo)"
+
     return (f"🤖 Bot đang hoạt động.\n"
+            f"Semester ID: {sem_str}\n"
+            f"Timespan ID: {time_str}\n"
             f"Số môn theo dõi: {total_courses}\n"
             f"Số lớp đang theo dõi: {total_classes}\n"
             f"Lần check lớp gần nhất: {last_check}")
 
 
 COMMANDS = {
+    "/hocky": cmd_hocky,
     "/track": cmd_track,
     "/untrack": cmd_untrack,
     "/list": cmd_list,
