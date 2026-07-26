@@ -1,0 +1,38 @@
+name: Telegram Commands Handler
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  telegram-commands:
+    name: "Job 1 - Xử lý lệnh Telegram"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài đặt thư viện
+        run: pip install -r requirements.txt
+
+      - name: Xử lý tin nhắn Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: .
+        run: python scripts/telegram_commands.py
+
+      - name: Commit thay đổi (config + offset)
+        run: |
+          git config user.name "dtu-course-bot"
+          git config user.email "actions@github.com"
+          git add config/courses.json state/telegram_offset.json
+          git diff --staged --quiet || git commit -m "Cap nhat lenh Telegram [skip ci]"
+          git pull --rebase origin main
+          git push
+

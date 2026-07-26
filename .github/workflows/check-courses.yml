@@ -1,0 +1,39 @@
+name: DTU Course Watcher
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # mỗi 15 phút
+  workflow_dispatch: {}       # cho phép bấm chạy tay để test
+
+permissions:
+  contents: write
+
+jobs:
+  check-courses:
+    name: "Job 2 - Check lớp học trên website Duy Tân"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài đặt thư viện
+        run: pip install -r requirements.txt
+
+      - name: Check lớp học và gửi Telegram nếu có thay đổi
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/check_courses.py
+
+      - name: Commit thay đổi (state + config nếu có)
+        run: |
+          git config user.name "dtu-course-bot"
+          git config user.email "actions@github.com"
+          git add config/courses.json state/state.json
+          git diff --staged --quiet || git commit -m "Cap nhat trang thai lop hoc [skip ci]"
+          git pull --rebase origin main
+          git push
+
