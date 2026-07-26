@@ -155,7 +155,7 @@ def handle_pending_class_lists(cfg):
                     f"• {c['code']} — {c['status']} — {c['teacher']}\n"
                     f"  {c['schedule']}"
                 )
-            lines.append(f"\nDùng /select {course['course_id']} <mã_lớp...> để chọn lớp theo dõi.")
+            lines.append(f"\nDùng /select {course['course_id']} (mã lớp...) để chọn lớp theo dõi.")
             lines.append("Ví dụ: /select " + str(course["course_id"]) + " "
                          + " ".join(c["code"] for c in classes[:2]))
             telegram_send_message("\n".join(lines))

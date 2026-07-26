@@ -31,7 +31,7 @@ from common import (
 
 def cmd_hocky(cfg, args):
     if len(args) < 2:
-        return "❌ Cú pháp: /hocky <semester_id> <timespan_id>"
+        return "❌ Cú pháp: /hocky (semester_id) (timespan_id)"
     cfg["semester_id"] = args[0]
     cfg["timespan_id"] = args[1]
     return (f"✅ Đã lưu semester_id = {args[0]} và timespan_id = {args[1]}.\n"
@@ -42,10 +42,10 @@ def cmd_track(cfg, args):
     semester_id = cfg.get("semester_id")
     timespan_id = cfg.get("timespan_id")
     if semester_id is None or timespan_id is None:
-        return "❌ Vui lòng cài đặt học kỳ bằng lệnh /hocky <semester_id> <timespan_id> trước."
+        return "❌ Vui lòng cài đặt học kỳ bằng lệnh /hocky (semester_id) (timespan_id) trước."
 
     if len(args) < 2:
-        return "❌ Cú pháp: /track <course_id hoặc URL môn học> <ten_mon>"
+        return "❌ Cú pháp: /track (course_id hoặc URL môn học) (ten_mon)"
 
     course_id = extract_course_id(args[0])
     if course_id is None:
@@ -70,7 +70,7 @@ def cmd_track(cfg, args):
 
 def cmd_untrack(cfg, args):
     if len(args) < 1:
-        return "❌ Cú pháp: /untrack <course_id>"
+        return "❌ Cú pháp: /untrack (course_id)"
     course_id = args[0]
     before = len(cfg["courses"])
     cfg["courses"] = [c for c in cfg["courses"] if str(c["course_id"]) != str(course_id)]
@@ -92,7 +92,7 @@ def cmd_list(cfg, args):
 
 def cmd_classes(cfg, args):
     if len(args) < 1:
-        return "❌ Cú pháp: /classes <course_id>"
+        return "❌ Cú pháp: /classes (course_id)"
     course_id = args[0]
     course = find_course(cfg, course_id)
     if not course:
@@ -103,7 +103,7 @@ def cmd_classes(cfg, args):
 
 def cmd_select(cfg, args):
     if len(args) < 2:
-        return "❌ Cú pháp: /select <course_id> <ma_lop_1> <ma_lop_2> ..."
+        return "❌ Cú pháp: /select (course_id) (ma_lop_1) (ma_lop_2) ..."
     course_id = args[0]
     class_codes = args[1:]
     course = find_course(cfg, course_id)
