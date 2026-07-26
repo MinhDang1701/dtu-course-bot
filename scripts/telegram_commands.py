@@ -9,7 +9,7 @@ Lệnh hỗ trợ:
   /track <course_id hoặc URL môn học> <ten_mon>
   /untrack <course_id>
   /list
-  /classes <course_id>      -> đánh dấu "cần lấy danh sách lớp", job 2 sẽ gửi
+  /classes <course_id>      -> gửi ngay danh sách lớp qua Telegram
   /select <course_id> <ma_lop_1> <ma_lop_2> ...
   /status
 """
@@ -26,6 +26,8 @@ from common import (
     telegram_send_message,
     find_course,
     extract_course_id,
+    fetch_class_list_html,
+    parse_class_list,
 )
 
 
@@ -62,10 +64,32 @@ def cmd_track(cfg, args):
         "timespan_id": timespan_id,
         "course_name": course_name,
         "watch_classes": [],
-        "pending_class_list": True,  # job 2 sẽ tự gửi danh sách lớp
     })
-    return (f"✅ Đã thêm môn {course_name} (id {course_id}).\n"
-            f"Danh sách lớp sẽ được gửi trong lần check tiếp theo (~15 phút).")
+
+    msg_added = f"✅ Đã thêm môn {course_name} (id {course_id}).\n\n"
+    
+    try:
+        html = fetch_class_list_html(course_id, semester_id, timespan_id)
+        classes = parse_class_list(html)
+    except Exception as e:
+        return msg_added + f"❌ Lỗi khi lấy danh sách lớp: {e}"
+
+    if not classes:
+        return msg_added + (
+            f"⚠️ Không parse được danh sách lớp cho {course_name}.\n"
+            f"Có thể cấu trúc HTML khác dự đoán — cần gửi mẫu HTML thật để chỉnh lại."
+        )
+
+    lines = [msg_added + f"📚 Danh sách lớp — {course_name} (id {course_id}):\n"]
+    for c in classes:
+        lines.append(
+            f"• {c['code']} — {c['status']} — {c['teacher']}\n"
+            f"  {c['schedule']}"
+        )
+    lines.append(f"\nDùng /select {course_id} (mã lớp...) để chọn lớp theo dõi.")
+    lines.append("Ví dụ: /select " + str(course_id) + " "
+                 + " ".join(c["code"] for c in classes[:2]))
+    return "\n".join(lines)
 
 
 def cmd_untrack(cfg, args):
@@ -97,8 +121,31 @@ def cmd_classes(cfg, args):
     course = find_course(cfg, course_id)
     if not course:
         return f"⚠️ Chưa theo dõi môn {course_id}. Dùng /track trước."
-    course["pending_class_list"] = True
-    return f"🔄 Sẽ lấy danh sách lớp của {course['course_name']} trong lần check tiếp theo (~15 phút)."
+    
+    try:
+        html = fetch_class_list_html(
+            course["course_id"], course["semester_id"], course["timespan_id"]
+        )
+        classes = parse_class_list(html)
+    except Exception as e:
+        return f"❌ Lỗi khi lấy danh sách lớp cho {course['course_name']}: {e}"
+
+    if not classes:
+        return (
+            f"⚠️ Không parse được danh sách lớp cho {course['course_name']}.\n"
+            f"Có thể cấu trúc HTML khác dự đoán — cần gửi mẫu HTML thật để chỉnh lại."
+        )
+
+    lines = [f"📚 Danh sách lớp — {course['course_name']} (id {course['course_id']}):\n"]
+    for c in classes:
+        lines.append(
+            f"• {c['code']} — {c['status']} — {c['teacher']}\n"
+            f"  {c['schedule']}"
+        )
+    lines.append(f"\nDùng /select {course['course_id']} (mã lớp...) để chọn lớp theo dõi.")
+    lines.append("Ví dụ: /select " + str(course["course_id"]) + " "
+                 + " ".join(c["code"] for c in classes[:2]))
+    return "\n".join(lines)
 
 
 def cmd_select(cfg, args):

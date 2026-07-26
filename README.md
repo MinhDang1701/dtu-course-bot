@@ -34,12 +34,12 @@ Ví dụ: `/hocky 95 95`
 /track <course_id hoặc URL môn học> <ten_mon>
 ```
 Ví dụ: `/track 1860 HIS362` hoặc `/track https://courses.duytan.edu.vn/Modules/academicprogram/CourseClassResult.aspx?courseid=1860&semesterid=95&timespan=95 HIS362`
-→ Thêm môn theo dõi. Lệnh sẽ tự động sử dụng `semester_id` và `timespan_id` được cấu hình từ `/hocky`. Trong lần chạy tiếp theo (~15 phút), bot sẽ tự gửi danh sách toàn bộ lớp của môn này.
+→ Thêm môn theo dõi. Lệnh sẽ tự động sử dụng `semester_id` và `timespan_id` được cấu hình từ `/hocky`. Bot sẽ tự động lấy và gửi về danh sách toàn bộ lớp của môn này ngay lập tức.
 
 ```
 /classes <course_id>
 ```
-Yêu cầu bot gửi lại danh sách lớp hiện tại của 1 môn đã track.
+Yêu cầu bot lấy và gửi danh sách lớp hiện tại của 1 môn đã track ngay lập tức.
 
 ```
 /select <course_id> <ma_lop_1> <ma_lop_2> ...
@@ -62,9 +62,7 @@ Ngừng theo dõi 1 môn (dùng khi sang học kỳ mới, đổi mã môn).
 ```
 Kiểm tra bot còn hoạt động, xem lần check gần nhất.
 
-**Lưu ý về độ trễ lệnh:** vì bot chỉ chạy theo lịch (không lắng nghe real-time),
-lệnh Telegram sẽ được xử lý trong lần chạy tiếp theo — nghĩa là có thể mất tới
-15 phút để bot phản hồi.
+**Lưu ý về độ trễ lệnh:** Vì job xử lý lệnh Telegram được gọi qua API bên ngoài mỗi 1-2 phút/lần, các lệnh của bạn sẽ được bot phản hồi trong vòng 1-2 phút. Danh sách lớp học cũng sẽ được gửi ngay lập tức trong phản hồi đó.
 
 ## 3. Cách lấy `course_id`, `semester_id`, `timespan_id`
 
@@ -88,9 +86,10 @@ hàm `parse_class_list()` cho chính xác.
 
 ```
 .
-├── .github/workflows/check.yml   # 2 job: xử lý lệnh Telegram, check lớp học
+├── .github/workflows/telegram-commands.yml   # xử lý lệnh Telegram (workflow_dispatch)
+├── .github/workflows/check-courses.yml       # check lớp học định kỳ (mỗi 15 phút)
 ├── scripts/
-│   ├── common.py                 # hàm dùng chung (đọc/ghi config, gọi Telegram API)
+│   ├── common.py                 # hàm dùng chung (đọc/ghi config, gọi Telegram API, fetch/parse)
 │   ├── telegram_commands.py      # JOB 1
 │   └── check_courses.py          # JOB 2
 ├── config/courses.json           # danh sách môn/lớp đang theo dõi (tự cập nhật)
