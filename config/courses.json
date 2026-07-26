@@ -1,3 +1,5 @@
 {
-  "courses": []
+  "courses": [],
+  "semester_id": null,
+  "timespan_id": null
 }
