@@ -1,0 +1,69 @@
+name: DTU Course Watcher
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # mỗi 15 phút — GitHub có thể trễ vài phút, đây là bình thường
+  workflow_dispatch: {}       # cho phép bấm chạy tay để test
+
+permissions:
+  contents: write
+
+jobs:
+  telegram-commands:
+    name: "Job 1 - Xử lý lệnh Telegram"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài đặt thư viện
+        run: pip install -r requirements.txt
+
+      - name: Xử lý tin nhắn Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        working-directory: .
+        run: python scripts/telegram_commands.py
+
+      - name: Commit thay đổi (config + offset)
+        run: |
+          git config user.name "dtu-course-bot"
+          git config user.email "actions@github.com"
+          git add config/courses.json state/telegram_offset.json
+          git diff --staged --quiet || git commit -m "Cap nhat lenh Telegram [skip ci]"
+          git push
+
+  check-courses:
+    name: "Job 2 - Check lớp học trên website Duy Tân"
+    needs: telegram-commands
+    if: always()   # vẫn chạy dù job 1 lỗi, để không bị chặn toàn bộ bot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}   # lấy đúng nhánh, đã có commit mới nhất từ job 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cài đặt thư viện
+        run: pip install -r requirements.txt
+
+      - name: Check lớp học và gửi Telegram nếu có thay đổi
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/check_courses.py
+
+      - name: Commit thay đổi (state + config nếu có)
+        run: |
+          git config user.name "dtu-course-bot"
+          git config user.email "actions@github.com"
+          git add config/courses.json state/state.json
+          git diff --staged --quiet || git commit -m "Cap nhat trang thai lop hoc [skip ci]"
+          git push

@@ -1,0 +1,170 @@
+"""
+telegram_commands.py
+JOB 1 — chỉ xử lý tin nhắn Telegram, KHÔNG gọi website Duy Tân.
+Nếu phần này lỗi (Telegram API sập, sai cú pháp lệnh...) sẽ không ảnh hưởng
+tới job check lớp học ở job 2.
+
+Lệnh hỗ trợ:
+  /track <course_id> <semester_id> <timespan_id> <ten_mon>
+  /untrack <course_id>
+  /list
+  /classes <course_id>      -> đánh dấu "cần lấy danh sách lớp", job 2 sẽ gửi
+  /select <course_id> <ma_lop_1> <ma_lop_2> ...
+  /status
+"""
+
+import sys
+import time
+from common import (
+    load_config,
+    save_config,
+    load_offset,
+    save_offset,
+    load_state,
+    telegram_get_updates,
+    telegram_send_message,
+    find_course,
+)
+
+
+def cmd_track(cfg, args):
+    if len(args) < 4:
+        return "❌ Cú pháp: /track <course_id> <semester_id> <timespan_id> <ten_mon>"
+    course_id, semester_id, timespan_id = args[0], args[1], args[2]
+    course_name = " ".join(args[3:])
+
+    if find_course(cfg, course_id):
+        return f"⚠️ Môn {course_id} đã có trong danh sách theo dõi rồi."
+
+    cfg["courses"].append({
+        "course_id": course_id,
+        "semester_id": semester_id,
+        "timespan_id": timespan_id,
+        "course_name": course_name,
+        "watch_classes": [],
+        "pending_class_list": True,  # job 2 sẽ tự gửi danh sách lớp
+    })
+    return (f"✅ Đã thêm môn {course_name} (id {course_id}).\n"
+            f"Danh sách lớp sẽ được gửi trong lần check tiếp theo (~15 phút).")
+
+
+def cmd_untrack(cfg, args):
+    if len(args) < 1:
+        return "❌ Cú pháp: /untrack <course_id>"
+    course_id = args[0]
+    before = len(cfg["courses"])
+    cfg["courses"] = [c for c in cfg["courses"] if str(c["course_id"]) != str(course_id)]
+    if len(cfg["courses"]) == before:
+        return f"⚠️ Không tìm thấy môn {course_id} trong danh sách theo dõi."
+    return f"✅ Đã xóa môn {course_id} khỏi danh sách theo dõi."
+
+
+def cmd_list(cfg, args):
+    if not cfg["courses"]:
+        return "📭 Chưa theo dõi môn nào. Dùng /track để thêm."
+    lines = ["📋 Danh sách môn đang theo dõi:\n"]
+    for c in cfg["courses"]:
+        watch = c.get("watch_classes") or []
+        watch_str = ", ".join(watch) if watch else "(chưa chọn lớp — dùng /classes rồi /select)"
+        lines.append(f"• {c['course_name']} (id {c['course_id']}) — lớp: {watch_str}")
+    return "\n".join(lines)
+
+
+def cmd_classes(cfg, args):
+    if len(args) < 1:
+        return "❌ Cú pháp: /classes <course_id>"
+    course_id = args[0]
+    course = find_course(cfg, course_id)
+    if not course:
+        return f"⚠️ Chưa theo dõi môn {course_id}. Dùng /track trước."
+    course["pending_class_list"] = True
+    return f"🔄 Sẽ lấy danh sách lớp của {course['course_name']} trong lần check tiếp theo (~15 phút)."
+
+
+def cmd_select(cfg, args):
+    if len(args) < 2:
+        return "❌ Cú pháp: /select <course_id> <ma_lop_1> <ma_lop_2> ..."
+    course_id = args[0]
+    class_codes = args[1:]
+    course = find_course(cfg, course_id)
+    if not course:
+        return f"⚠️ Chưa theo dõi môn {course_id}. Dùng /track trước."
+    course["watch_classes"] = class_codes
+    return f"✅ {course['course_name']}: chỉ theo dõi lớp {', '.join(class_codes)}."
+
+
+def cmd_status(cfg, args):
+    state = load_state()
+    total_courses = len(cfg["courses"])
+    total_classes = sum(len(c.get("watch_classes") or []) for c in cfg["courses"])
+    last_check = state.get("_last_check_time", "chưa có lần check nào")
+    return (f"🤖 Bot đang hoạt động.\n"
+            f"Số môn theo dõi: {total_courses}\n"
+            f"Số lớp đang theo dõi: {total_classes}\n"
+            f"Lần check lớp gần nhất: {last_check}")
+
+
+COMMANDS = {
+    "/track": cmd_track,
+    "/untrack": cmd_untrack,
+    "/list": cmd_list,
+    "/classes": cmd_classes,
+    "/select": cmd_select,
+    "/status": cmd_status,
+}
+
+
+def process_message(cfg, text):
+    parts = text.strip().split()
+    if not parts:
+        return None
+    cmd = parts[0].lower()
+    args = parts[1:]
+    handler = COMMANDS.get(cmd)
+    if not handler:
+        return None  # bỏ qua tin nhắn không phải lệnh hợp lệ
+    return handler(cfg, args)
+
+
+def main():
+    cfg = load_config()
+    offset = load_offset()
+
+    try:
+        updates = telegram_get_updates(offset)
+    except Exception as e:
+        print(f"[telegram_commands] Lỗi khi lấy tin nhắn: {e}")
+        sys.exit(0)  # không làm fail cả job, để job 2 vẫn chạy bình thường
+
+    if not updates:
+        print("[telegram_commands] Không có tin nhắn mới.")
+        return
+
+    replies = []
+    max_update_id = offset - 1
+
+    for update in updates:
+        max_update_id = max(max_update_id, update["update_id"])
+        message = update.get("message") or update.get("edited_message")
+        if not message:
+            continue
+        text = message.get("text", "")
+        if not text.startswith("/"):
+            continue
+        reply = process_message(cfg, text)
+        if reply:
+            replies.append(reply)
+
+    save_offset(max_update_id + 1)
+    save_config(cfg)
+
+    for reply in replies:
+        try:
+            telegram_send_message(reply)
+            time.sleep(0.5)  # tránh gửi quá nhanh bị Telegram giới hạn
+        except Exception as e:
+            print(f"[telegram_commands] Lỗi khi gửi tin nhắn: {e}")
+
+
+if __name__ == "__main__":
+    main()
