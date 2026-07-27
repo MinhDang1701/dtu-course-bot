@@ -1,22 +1,13 @@
 {
   "courses": [
     {
-      "course_id": "43",
-      "semester_id": "95",
-      "timespan_id": "95",
-      "course_name": "EVR205 skmt",
-      "watch_classes": [
-        "A",
-        "C"
-      ],
-      "pending_class_list": true
-    },
-    {
       "course_id": "2319",
       "semester_id": "95",
       "timespan_id": "95",
       "course_name": "COM142 viết",
-      "watch_classes": []
+      "watch_classes": [
+        "AA"
+      ]
     }
   ],
   "semester_id": "95",
