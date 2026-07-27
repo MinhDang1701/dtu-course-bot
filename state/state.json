@@ -1,10 +1,14 @@
 {
-  "_last_check_time": "2026-07-27 14:51:43",
+  "_last_check_time": "2026-07-27 18:21:54",
   "43:A": {
     "slots": 0,
     "status": "Hết chỗ"
   },
   "43:C": {
+    "slots": 0,
+    "status": "Hết chỗ"
+  },
+  "2319:AA": {
     "slots": 0,
     "status": "Hết chỗ"
   }
