@@ -1,15 +1,5 @@
 {
-  "courses": [
-    {
-      "course_id": "2319",
-      "semester_id": "95",
-      "timespan_id": "95",
-      "course_name": "COM142 viết",
-      "watch_classes": [
-        "AA"
-      ]
-    }
-  ],
+  "courses": [],
   "semester_id": "95",
   "timespan_id": "95"
 }
