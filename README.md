@@ -1,6 +1,6 @@
 # DTU Course Watcher Bot
 
-Bot theo dõi chỗ trống lớp tín chỉ Đại học Duy Tân, chạy hoàn toàn miễn phí
+Bot theo dõi chỗ trống lớp tín chỉ , chạy hoàn toàn miễn phí
 trên GitHub Actions (không cần bật máy tính, không cần VPS).
 
 ## 1. Setup ban đầu
